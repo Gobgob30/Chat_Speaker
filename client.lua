@@ -34,17 +34,19 @@ local dfpwm = require("cc.audio.dfpwm")
 
 while true do
     local event, sender, message = os.pullEvent("chat")
-    ws.send(string.format("%s: %s", sender, message))
-    local text = ws.receive()
-    chat.sendMessage(text)
-    if text then
-        local sound = ws.receive()
-        if sound and not (sound == "failed") then
-            local decoder = dfpwm.make_decoder()
-            for i = 0, #sound, 16 * 1024 do
-                local buffer = decoder(sound:sub(i, i + 16 * 1024 - 1))
-                while not speaker.playAudio(buffer) do
-                    os.pullEvent('speaker_audio_empty')
+    if message ~= "failed" then
+        ws.send(string.format("%s: %s", sender, message))
+        local text = ws.receive()
+        chat.sendMessage(text)
+        if text then
+            local sound = ws.receive()
+            if sound and sound ~= "failed" then
+                local decoder = dfpwm.make_decoder()
+                for i = 0, #sound, 16 * 1024 do
+                    local buffer = decoder(sound:sub(i, i + 16 * 1024 - 1))
+                    while not speaker.playAudio(buffer) do
+                        os.pullEvent('speaker_audio_empty')
+                    end
                 end
             end
         end
