@@ -96,30 +96,31 @@ wss.on("connection", (ws: WebSocket) => {
     ws.on("message", async (data) => {
         try {
             const message = data.toString();
-            if (message.toLowerCase() === "reload") {
-                users_messages.set(id, [system_message]);
-                return
-            }
-            const user_messages = users_messages.get(id) || [];
-            user_messages.push({ content: message, role: Role.user });
-            const response = await axios.post("https://api.openai.com/v1/chat/completions", {
-                model: "gpt-3.5-turbo",
-                messages: users_messages.get(id),
-                max_tokens: 100,
-                presence_penalty: 1.5,
-                temperature: 0.9
-            },
-                {
-                    headers: {
-                        "Content-Type": "application/json",
-                        "Authorization": `Bearer ${openAIKey}`
-                    }
-                })
-            user_messages.push(response.data.choices[0].message);
-            const resp_message = response.data.choices[0].message.content;
-            ws.send(resp_message);
+            // if (message.toLowerCase() === "reload") {
+            //     users_messages.set(id, [system_message]);
+            //     return
+            // }
+            // const user_messages = users_messages.get(id) || [];
+            // user_messages.push({ content: message, role: Role.user });
+            // const response = await axios.post("https://api.openai.com/v1/chat/completions", {
+            //     model: "gpt-3.5-turbo",
+            //     messages: users_messages.get(id),
+            //     max_tokens: 100,
+            //     presence_penalty: 1.5,
+            //     temperature: 0.9
+            // },
+            //     {
+            //         headers: {
+            //             "Content-Type": "application/json",
+            //             "Authorization": `Bearer ${openAIKey}`
+            //         }
+            //     })
+            // user_messages.push(response.data.choices[0].message);
+            // const resp_message = response.data.choices[0].message.content;
+            // ws.send(resp_message);
             const uber_resp = await axios.post("https://api.uberduck.ai/speak", {
-                speech: resp_message,
+                // speech: resp_message,
+                speech: message,
                 voicemodel_uuid: voicemodel_uuid,
             }, {
                 headers: {
@@ -142,7 +143,7 @@ wss.on("connection", (ws: WebSocket) => {
                     return
                 }
             }
-            exec(`curl ${file_path} | ffmpeg -i - -af "volume=3.0" -y -acodec dfpwm -ac 1 -ar 48000 -vn -fs 25000000 -f dfpwm -`, { encoding: "buffer" }, (err, stdout: Buffer, stderr) => {
+            exec(`curl ${file_path} | ffmpeg -i - -af "volume=4.0" -y -acodec dfpwm -ac 1 -ar 48000 -vn -fs 25000000 -f dfpwm -`, { encoding: "buffer" }, (err, stdout: Buffer, stderr) => {
                 if (err) {
                     console.log(err)
                     ws.send("failed")
@@ -162,27 +163,28 @@ app.post("/get_audio/:id", async (req, res) => {
         if (!id) {
             throw new Error("No id provided")
         }
-        let user_messages = users_messages.get(id)
-        if (!user_messages) {
-            users_messages.set(id, [system_message])
-            user_messages = users_messages.get(id) || [system_message];
-        }
-        user_messages.push({ content: req.body, role: Role.user });
-        const response = await axios.post("https://api.openai.com/v1/chat/completions", {
-            model: "gpt-3.5-turbo",
-            messages: users_messages.get(id),
-            max_tokens: 100,
-            presence_penalty: 1.5,
-            temperature: 0.9
-        }, {
-            headers: {
-                "Content-Type": "application/json",
-                "Authorization": `Bearer ${openAIKey}`
-            }
-        })
-        user_messages.push(response.data.choices[0].message);
+        // let user_messages = users_messages.get(id)
+        // if (!user_messages) {
+        //     users_messages.set(id, [system_message])
+        //     user_messages = users_messages.get(id) || [system_message];
+        // }
+        // user_messages.push({ content: req.body, role: Role.user });
+        // const response = await axios.post("https://api.openai.com/v1/chat/completions", {
+        //     model: "gpt-3.5-turbo",
+        //     messages: users_messages.get(id),
+        //     max_tokens: 100,
+        //     presence_penalty: 1.5,
+        //     temperature: 0.9
+        // }, {
+        //     headers: {
+        //         "Content-Type": "application/json",
+        //         "Authorization": `Bearer ${openAIKey}`
+        //     }
+        // })
+        // user_messages.push(response.data.choices[0].message);
         const uber_resp = await axios.post("https://api.uberduck.ai/speak", {
-            speech: response.data.choices[0].message.content,
+            // speech: response.data.choices[0].message.content,
+            speech: req.body,
             voicemodel_uuid: voicemodel_uuid,
         }, {
             headers: {
@@ -245,6 +247,10 @@ app.get("/css", (req, res) => {
 
 app.get("/js", (req, res) => {
     res.sendFile(path.join(__dirname, "public", "index.js"));
+})
+
+app.get("/client.lua", (req, res) => {
+    res.sendFile(path.join(__dirname, "public", "client.lua"));
 })
 
 app.get("*", (req, res) => {
